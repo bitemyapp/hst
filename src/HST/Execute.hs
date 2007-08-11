@@ -26,13 +26,19 @@ evaluatePrimary :: Primary -> Object
 evaluatePrimary (PrimaryLiteral (StringLiteral s)) = StringObject s
 evaluatePrimary (PrimaryIdentifier (Identifier "Transcript")) = TranscriptObject
 
-prepareMessage (KeywordMessage (Keyword k) p) = (k, [evaluatePrimary p])
+prepareMessage :: [Message] -> ([String],[Object])
+prepareMessage msg = unzip (map prepareMessageComponent msg)
+prepareMessageComponent (KeywordMessage (Keyword k) p) = (k, evaluatePrimary p)
 
 evaluateExpression (BasicExpression prim msg) = sendMessage (evaluatePrimary prim) sel args
     where (sel, args) = prepareMessage msg
 
 executeStatement (Expression e) = evaluateExpression e
-execute ast = sequence_ $ map executeStatement ast
 
-sendMessage TranscriptObject "show" [(StringObject s)] = putStrLn s
+executeElement (Initialization stmts) = sequence_ $ map executeStatement stmts
+executeElement _ = return ()
+
+execute ast = sequence_ $ map executeElement ast
+
+sendMessage TranscriptObject ["show"] [(StringObject s)] = putStrLn s
 

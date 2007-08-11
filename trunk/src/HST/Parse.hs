@@ -31,6 +31,10 @@ stringLiteral = StringLiteral `liftM` (quote >> stString >>~ quote)
 quote = char '\''
 stString = many $ choice [noneOf ['\''], try $ string "''" >> return '\'']
 
+comment = commentDelimiter >> nonCommentDelimiter >> commentDelimiter
+commentDelimiter = char '"'
+nonCommentDelimiter = many $ noneOf ['"']
+
 stLetter = choice [letter, char '_', digit]
 
 identifierString = many1 stLetter
@@ -47,6 +51,16 @@ keywordMessage = do
     spaces
     p <- primary
     return $ KeywordMessage k p
+
+
+expression = basicExpression
+statements = expression >>= (return . Expression)
+
+initializerDefinition = statements
+programInitializer = initializerDefinition
+
+programElement = programInitializer
+smalltalkFile = many programElement >>~ spaces >>~ eof
 
 a >>~ b = a >>= \x -> b >> return x
         

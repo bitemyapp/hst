@@ -16,6 +16,8 @@
 
 module HST.AST where
 
+type HstAst = [Statement]
+
 newtype Identifier = Identifier String
     deriving (Show, Eq)
 newtype Literal = StringLiteral String
@@ -30,3 +32,7 @@ data Message = KeywordMessage Keyword Primary
 
 data Expression = BasicExpression Primary Message
     deriving (Show, Eq)
+
+data Statement = Expression Expression
+    deriving (Show)
+

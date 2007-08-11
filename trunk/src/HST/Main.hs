@@ -21,14 +21,20 @@ import System.Environment
 import Text.ParserCombinators.Parsec
 import qualified Data.ByteString.Char8 as BS
 
+import HST.AST
 import HST.Execute
 import HST.Parse
 
 strictReadFile :: FilePath -> IO String
 strictReadFile f = BS.readFile f >>= \file -> return $ BS.unpack file
 
-main = head `fmap` getArgs >>= \fileName ->
-       strictReadFile fileName >>= \file ->
-       case parse basicExpression fileName file of
-           Left  err -> putStrLn $ show err
-           Right ast -> evaluateExpression ast
+showParse f = parseFile f (putStrLn . show)
+
+parseFile f ct = strictReadFile f >>= \file -> 
+        case parse smalltalkFile f file of
+            Left err -> putStrLn $ show err
+            Right ast -> ct ast
+
+executeFile f = parseFile f execute
+
+main = head `fmap` getArgs >>= executeFile

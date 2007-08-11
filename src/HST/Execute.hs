@@ -31,5 +31,8 @@ prepareMessage (KeywordMessage (Keyword k) p) = (k, [evaluatePrimary p])
 evaluateExpression (BasicExpression prim msg) = sendMessage (evaluatePrimary prim) sel args
     where (sel, args) = prepareMessage msg
 
+executeStatement (Expression e) = evaluateExpression e
+execute ast = sequence_ $ map executeStatement ast
+
 sendMessage TranscriptObject "show" [(StringObject s)] = putStrLn s
 

@@ -18,21 +18,29 @@ module HST.AST where
 
 type HstAst = [Statement]
 
+type Selector = [String]
+
 newtype Identifier = Identifier String
     deriving (Show, Eq)
-newtype Literal = StringLiteral String
+data Literal = StringLiteral String | SelectorLiteral String
     deriving (Show, Eq)
 data Primary = PrimaryLiteral Literal | PrimaryIdentifier Identifier
     deriving (Show, Eq)
 
 newtype Keyword = Keyword String
     deriving (Show, Eq)
-data Message = KeywordMessage Keyword Primary
+data Message = KeywordMessage Keyword Primary | UnaryMessage String
     deriving (Show, Eq)
 
-data Expression = BasicExpression Primary Message
+data Expression = BasicExpression Primary [Message]
     deriving (Show, Eq)
 
-data Statement = Expression Expression
+data Statement = Expression Expression | Return Expression
+    deriving (Show)
+
+data MethodDefinition = ClassMethod Selector [Statement] | InstanceMethod Selector [Statement]
+    deriving (Show)
+
+data ProgramElement = MethodDefinition MethodDefinition | Initialization [Statement] | Comment String
     deriving (Show)
 

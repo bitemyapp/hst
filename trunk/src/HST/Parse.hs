@@ -24,14 +24,19 @@ import Text.ParserCombinators.Parsec
 basicExpression = do
     p <- primary
     spaces
-    m <- keywordMessage
+    m <- (try keywordMessage
+      <|> unaryMessages) 
     return $ BasicExpression p m
 
 stringLiteral = StringLiteral `liftM` (quote >> stString >>~ quote)
 quote = char '\''
 stString = many $ choice [noneOf ['\''], try $ string "''" >> return '\'']
 
-comment = commentDelimiter >> nonCommentDelimiter >> commentDelimiter
+quotedSelector = SelectorLiteral `fmap` (char '#' >> identifierString)
+
+literal = choice [ stringLiteral, quotedSelector ]
+
+comment = commentDelimiter >> nonCommentDelimiter >>~ commentDelimiter >>= (return . Comment) 
 commentDelimiter = char '"'
 nonCommentDelimiter = many $ noneOf ['"']
 
@@ -44,23 +49,67 @@ keyword = Keyword `liftM` (identifierString >>~ char ':')
 identifier = Identifier `liftM` identifierString
 
 primary = PrimaryIdentifier `liftM` identifier
-      <|> PrimaryLiteral `liftM` stringLiteral
+      <|> PrimaryLiteral `liftM` literal
 
-keywordMessage = do 
+unaryMessage = identifierString >>~ spaces >>= (return . UnaryMessage)
+unaryMessages = do
+  umsgs <- manyTill unaryMessage (try keywordMessage)
+  kmsgs <- keywordMessage
+  return $ umsgs ++ kmsgs
+
+keywordMessage = many ((do 
     k <- keyword
     spaces
     p <- primary
-    return $ KeywordMessage k p
+    return $ KeywordMessage k p) >>~ spaces)
 
 
 expression = basicExpression
-statements = expression >>= (return . Expression)
+statements = statements' []
+statements' s = (returnStatement >>= \ret -> return (s ++ [ret]))
+             <|> (expression >>= \expr -> return (s ++ [Expression expr]))
+
+returnStatement = char '^' >> expression >>= (return . Return)
+
+unarySelector = identifierString >>~ spaces >>= \selector -> return [selector]
+
+method ctr = unarySelector >>= \selector ->
+    statements >>= \statements ->
+    return $ ctr selector statements
+
+methodDefinition = do
+    char '!' 
+    cls <- identifierString
+    spaces
+    ctr <- option InstanceMethod (string "class" >> return ClassMethod)
+    spaces
+    string "methodsFor:"
+    spaces
+    category <- stringLiteral
+    char '!'
+    spaces
+    mthd <- method ctr
+    spaces
+    char '!'
+    spaces
+    char '!'
+    return $ MethodDefinition mthd
+
 
 initializerDefinition = statements
-programInitializer = initializerDefinition
+programInitializer = initializerDefinition >>~ char '!' >>= (return . Initialization) 
 
-programElement = programInitializer
-smalltalkFile = many programElement >>~ spaces >>~ eof
+programElement = (comment >>~ char '!'
+             <|> methodDefinition
+             <|> programInitializer) 
+             
+
+
+--choice
+--  [ comment >>~ option ' ' (char '!')
+--  , programInitializer
+--  ]
+smalltalkFile = many (programElement >>~ spaces) >>~ eof
 
 a >>~ b = a >>= \x -> b >> return x
         

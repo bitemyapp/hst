@@ -16,6 +16,7 @@
 
 module HST.Execute where
 
+import HST.AST
 import HST.Parse
 
 data Object = TranscriptObject | StringObject String

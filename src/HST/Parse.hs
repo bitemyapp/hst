@@ -24,12 +24,10 @@ import Text.ParserCombinators.Parsec
 basicExpression = do
     p <- primary
     spaces
-    m <- (try keywordMessage
-      <|> unaryMessages) 
+    m <- messages
     return $ BasicExpression p m
 
-stringLiteral = StringLiteral `liftM` (quote >> stString >>~ quote)
-quote = char '\''
+stringLiteral = StringLiteral `liftM` (stringDelimiter >> stString >>~ stringDelimiter)
 stString = many $ choice [noneOf ['\''], try $ string "''" >> return '\'']
 
 quotedSelector = SelectorLiteral `fmap` (char '#' >> identifierString)
@@ -37,32 +35,38 @@ quotedSelector = SelectorLiteral `fmap` (char '#' >> identifierString)
 literal = choice [ stringLiteral, quotedSelector ]
 
 comment = commentDelimiter >> nonCommentDelimiter >>~ commentDelimiter >>= (return . Comment) 
-commentDelimiter = char '"'
 nonCommentDelimiter = many $ noneOf ['"']
 
-stLetter = choice [letter, char '_', digit]
-
-identifierString = many1 stLetter
-
-keyword = Keyword `liftM` (identifierString >>~ char ':')
-
-identifier = Identifier `liftM` identifierString
-
+{-
+ - Primarys
+ -}
 primary = PrimaryIdentifier `liftM` identifier
       <|> PrimaryLiteral `liftM` literal
 
-unaryMessage = identifierString >>~ spaces >>= (return . UnaryMessage)
-unaryMessages = do
-  umsgs <- manyTill unaryMessage (try keywordMessage)
-  kmsgs <- keywordMessage
-  return $ umsgs ++ kmsgs
 
-keywordMessage = many ((do 
-    k <- keyword
-    spaces
-    p <- primary
-    return $ KeywordMessage k p) >>~ spaces)
+identifier = Identifier `liftM` identifierString
+identifierString = many1 stLetter
+stLetter = choice [letter, char '_', digit]
 
+{-
+ - Messages
+ -}
+messages :: GenParser Char st [Message]
+messages = (try keywordMessage >>= \m -> return [m])
+        <|> (manyTill unaryMessage (try keywordMessage) >>= \umsgs -> keywordMessage >>= \kmsgs -> return (umsgs ++ [kmsgs]))
+
+
+keywordMessage :: GenParser Char st Message
+keywordMessage = keywordMessage' [] []
+keywordMessage' :: [Keyword] -> [Primary] -> GenParser Char st Message
+keywordMessage' sel arg = (lexeme keyword >>= \k ->
+                      lexeme primary >>= \p ->
+                      keywordMessage' (sel++[k]) (arg++[p]))
+                      <|> (return $ Message sel arg)
+
+keyword = identifierString >>~ char ':'
+
+unaryMessage = lexeme identifierString >>= \msg -> return $ Message [msg] []
 
 expression = basicExpression
 statements = statements' []
@@ -78,7 +82,7 @@ method ctr = unarySelector >>= \selector ->
     return $ ctr selector statements
 
 methodDefinition = do
-    char '!' 
+    elementDelimiter
     cls <- identifierString
     spaces
     ctr <- option InstanceMethod (string "class" >> return ClassMethod)
@@ -86,30 +90,35 @@ methodDefinition = do
     string "methodsFor:"
     spaces
     category <- stringLiteral
-    char '!'
-    spaces
+    elementDelimiter
     mthd <- method ctr
     spaces
-    char '!'
-    spaces
-    char '!'
+    elementDelimiter
+    elementDelimiter
     return $ MethodDefinition mthd
 
 
 initializerDefinition = statements
-programInitializer = initializerDefinition >>~ char '!' >>= (return . Initialization) 
+programInitializer = initializerDefinition >>~ elementDelimiter  >>= (return . Initialization) 
 
-programElement = (comment >>~ char '!'
+programElement = (comment >>~ elementDelimiter
              <|> methodDefinition
              <|> programInitializer) 
-             
 
-
---choice
---  [ comment >>~ option ' ' (char '!')
---  , programInitializer
---  ]
 smalltalkFile = many (programElement >>~ spaces) >>~ eof
 
+{-
+ - Simple Tokens
+ -}
+ 
+commentDelimiter = char '"'
+elementDelimiter = lexeme $ char '!'
+stringDelimiter = char '\'' 
+
+{-
+ - Utility Functions
+ -}
 a >>~ b = a >>= \x -> b >> return x
+
+lexeme p = p >>~ spaces
         

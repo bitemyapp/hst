@@ -22,16 +22,24 @@ import HST.Parse
 data Object = TranscriptObject | StringObject String
     deriving Show
 
+data MessageSend = MessageSend Selector [Object]
+
 evaluatePrimary :: Primary -> Object
 evaluatePrimary (PrimaryLiteral (StringLiteral s)) = StringObject s
 evaluatePrimary (PrimaryIdentifier (Identifier "Transcript")) = TranscriptObject
 
-prepareMessage :: [Message] -> ([String],[Object])
-prepareMessage msg = unzip (map prepareMessageComponent msg)
-prepareMessageComponent (KeywordMessage (Keyword k) p) = (k, evaluatePrimary p)
+--prepareMessage :: [Message] -> ([String],[Object])
+--prepareMessage msg = unzip (map prepareMessageComponent msg)
+--prepareMessageComponent (KeywordMessage (Keyword k) p) = (k, evaluatePrimary p)
 
-evaluateExpression (BasicExpression prim msg) = sendMessage (evaluatePrimary prim) sel args
-    where (sel, args) = prepareMessage msg
+prepareMessage :: [Message] -> [MessageSend]
+prepareMessage msgs = map prepareMessage' msgs
+
+prepareMessage' :: Message -> MessageSend
+prepareMessage' (Message s args) = MessageSend s (map evaluatePrimary args)
+
+evaluateExpression (BasicExpression prim msg) = sendMessage (evaluatePrimary prim) (prepareMessage msg)
+    --where (sel, args) = prepareMessage msg
 
 executeStatement (Expression e) = evaluateExpression e
 
@@ -40,5 +48,7 @@ executeElement _ = return ()
 
 execute ast = sequence_ $ map executeElement ast
 
-sendMessage TranscriptObject ["show"] [(StringObject s)] = putStrLn s
+sendMessage :: Object -> [MessageSend] -> IO ()
+sendMessage TranscriptObject [(MessageSend ["show"] [(StringObject s)])] = putStrLn s
+--sendMessage TranscriptObject ["show"] [(StringObject s)] = putStrLn s
 

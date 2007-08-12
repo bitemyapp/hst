@@ -16,9 +16,18 @@
 
 module HST.AST where
 
-type HstAst = [Statement]
+type SmalltalkProgram = [ProgramElement]
+
+data ProgramElement = MethodDefinition MethodDefinition | Initialization [Statement] | Comment String
+    deriving (Show)
 
 type Selector = [String]
+type Arguments = [Primary]
+
+data Message = Message Selector Arguments
+    deriving (Show,Eq)
+
+type Keyword = String
 
 newtype Identifier = Identifier String
     deriving (Show, Eq)
@@ -27,10 +36,10 @@ data Literal = StringLiteral String | SelectorLiteral String
 data Primary = PrimaryLiteral Literal | PrimaryIdentifier Identifier
     deriving (Show, Eq)
 
-newtype Keyword = Keyword String
-    deriving (Show, Eq)
-data Message = KeywordMessage Keyword Primary | UnaryMessage String
-    deriving (Show, Eq)
+--newtype Keyword = Keyword String
+--    deriving (Show, Eq)
+--data Message = KeywordMessage Keyword Primary | UnaryMessage String
+--    deriving (Show, Eq)
 
 data Expression = BasicExpression Primary [Message]
     deriving (Show, Eq)
@@ -41,6 +50,4 @@ data Statement = Expression Expression | Return Expression
 data MethodDefinition = ClassMethod Selector [Statement] | InstanceMethod Selector [Statement]
     deriving (Show)
 
-data ProgramElement = MethodDefinition MethodDefinition | Initialization [Statement] | Comment String
-    deriving (Show)
 

@@ -17,8 +17,8 @@
 module HST.Test.Parse where
 
 import HST.AST
-import HST.Parse (basicExpression)
-import HST.PPrint (expression)
+import qualified HST.Parse as Parse 
+import qualified HST.PPrint as PPrint
 
 import Control.Monad
 
@@ -28,11 +28,18 @@ import Text.ParserCombinators.Parsec (parse)
 import Text.PrettyPrint.HughesPJ (render)
 
 checkExpressionParser ast =
-  case (parse basicExpression "" (render $ expression ast)) of
+  case (parse Parse.basicExpression "" (render $ PPrint.expression ast)) of
     Left _ -> False
     Right a -> ast == a
   where types = ast :: Expression
 
+checkMessageParser kmsg =
+  case (parse Parse.keywordMessage "" (render $ PPrint.message kmsg)) of
+    Left _ -> False
+    Right m -> kmsg == m
+  where types = kmsg :: Message
+
+runMessageChecks = quickCheck checkMessageParser
 runChecks = quickCheck checkExpressionParser
 
 instance Arbitrary Literal where
@@ -43,7 +50,11 @@ instance Arbitrary Expression where
     arbitrary = liftM2 BasicExpression arbitrary arbitrary
 
 instance Arbitrary Message where
-    arbitrary = liftM2 KeywordMessage arbitrary arbitrary 
+    arbitrary = sized (\n -> liftM2 
+      KeywordMessage 
+        (replicateM (n+1) arbitrary) 
+        (replicateM (n+1) arbitrary))
+    
 
 instance Arbitrary Primary where
    arbitrary = oneof 

@@ -24,10 +24,10 @@ data ProgramElement = MethodDefinition MethodDefinition | Initialization [Statem
 type Selector = [String]
 type Arguments = [Primary]
 
-data Message = Message Selector Arguments
-    deriving (Show,Eq)
+--data Message = Message Selector Arguments
+--    deriving (Show,Eq)
 
-type Keyword = String
+--type Keyword = String
 
 newtype Identifier = Identifier String
     deriving (Show, Eq)
@@ -36,12 +36,15 @@ data Literal = StringLiteral String | SelectorLiteral String
 data Primary = PrimaryLiteral Literal | PrimaryIdentifier Identifier
     deriving (Show, Eq)
 
---newtype Keyword = Keyword String
---    deriving (Show, Eq)
+newtype Keyword = Keyword String
+    deriving (Show, Eq)
 --data Message = KeywordMessage Keyword Primary | UnaryMessage String
 --    deriving (Show, Eq)
 
-data Expression = BasicExpression Primary [Message]
+data Message = KeywordMessage [Keyword] [Primary]
+    deriving (Show,Eq)
+
+data Expression = BasicExpression Primary Message
     deriving (Show, Eq)
 
 data Statement = Expression Expression | Return Expression

@@ -51,18 +51,7 @@ stLetter = choice [letter, char '_', digit]
 {-
  - Messages
  -}
---messages :: GenParser Char st [Message]
---messages = (try keywordMessage >>= \m -> return [m])
---        <|> (manyTill unaryMessage (try keywordMessage) >>= \umsgs -> keywordMessage >>= \kmsgs -> return (umsgs ++ [kmsgs]))
 messages = keywordMessage
-
---keywordMessage :: GenParser Char st Message
---keywordMessage = keywordMessage' [] []
---keywordMessage' :: [Keyword] -> [Primary] -> GenParser Char st Message
---keywordMessage' sel arg = (lexeme keyword >>= \k ->
---                      lexeme primary >>= \p ->
---                      keywordMessage' (sel++[k]) (arg++[p]))
---                      <|> (return $ Message sel arg)
 
 keyword = identifierString >>~ char ':' >>= (return . Keyword)
 
@@ -71,13 +60,9 @@ keywordMessage = many1 keywordPrimary >>= return . unzip >>= return . uncurry Ke
 
 keywordPrimary :: GenParser Char st (Keyword,Primary)
 keywordPrimary = do
-  k <- keyword
-  spaces
-  p <- primary
-  spaces
+  k <- lexeme keyword
+  p <- lexeme primary
   return (k,p) 
-
---unaryMessage = lexeme identifierString >>= \msg -> return $ Message [msg] []
 
 expression = basicExpression
 statements = statements' []

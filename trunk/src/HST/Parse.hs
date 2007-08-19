@@ -51,7 +51,7 @@ stLetter = choice [letter, char '_', digit]
 {-
  - Messages
  -}
-messages = keywordMessage
+messages = try keywordMessage <|> unaryMessage
 
 keyword = identifierString >>~ char ':' >>= (return . Keyword)
 
@@ -63,6 +63,8 @@ keywordPrimary = do
   k <- lexeme keyword
   p <- lexeme primary
   return (k,p) 
+
+unaryMessage = lexeme identifierString >>= return . UnaryMessage  
 
 expression = basicExpression
 statements = statements' []

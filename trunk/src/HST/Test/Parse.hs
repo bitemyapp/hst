@@ -34,7 +34,7 @@ checkExpressionParser ast =
   where types = ast :: Expression
 
 checkMessageParser kmsg =
-  case (parse Parse.keywordMessage "" (render $ PPrint.message kmsg)) of
+  case (parse Parse.messages "" (render $ PPrint.message kmsg)) of
     Left _ -> False
     Right m -> kmsg == m
   where types = kmsg :: Message
@@ -50,10 +50,13 @@ instance Arbitrary Expression where
     arbitrary = liftM2 BasicExpression arbitrary arbitrary
 
 instance Arbitrary Message where
-    arbitrary = sized (\n -> liftM2 
-      KeywordMessage 
-        (replicateM (n+1) arbitrary) 
-        (replicateM (n+1) arbitrary))
+    arbitrary = oneof
+        [ sized (\n -> liftM2 
+            KeywordMessage 
+              (replicateM (n+1) arbitrary) 
+              (replicateM (n+1) arbitrary))
+        , liftM UnaryMessage identifierGenerator
+        ]
     
 
 instance Arbitrary Primary where

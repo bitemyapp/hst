@@ -41,7 +41,7 @@ newtype Keyword = Keyword String
 --data Message = KeywordMessage Keyword Primary | UnaryMessage String
 --    deriving (Show, Eq)
 
-data Message = KeywordMessage [Keyword] [Primary]
+data Message = KeywordMessage [Keyword] [Primary] | UnaryMessage String
     deriving (Show,Eq)
 
 data Expression = BasicExpression Primary Message

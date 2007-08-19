@@ -32,5 +32,6 @@ primary (PrimaryIdentifier i) = identifier i
 keyword (Keyword k) = text $ k ++ ":"
 
 message (KeywordMessage k p) = foldr (<+>) empty (zipWith (\k p -> keyword k <+> primary p) k p)
+message (UnaryMessage m) = text m
 
 expression (BasicExpression p m) = primary p <+> message m

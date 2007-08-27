@@ -35,3 +35,8 @@ message (KeywordMessage k p) = foldr (<+>) empty (zipWith (\k p -> keyword k <+>
 message (UnaryMessage m) = text m
 
 expression (BasicExpression p m) = primary p <+> message m
+
+statement (Expression e) = expression e
+
+statements (s:ss) = statement s <> char '.' $+$ statements ss
+statements [] = empty

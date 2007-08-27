@@ -27,6 +27,11 @@ import Test.QuickCheck
 import Text.ParserCombinators.Parsec (parse) 
 import Text.PrettyPrint.HughesPJ (render)
 
+checkStatementParser ast =
+  case (parse Parse.statements "" (render $ PPrint.statements ast)) of
+    Left _ -> False
+    Right a -> ast == a
+
 checkExpressionParser ast =
   case (parse Parse.basicExpression "" (render $ PPrint.expression ast)) of
     Left _ -> False
@@ -39,12 +44,21 @@ checkMessageParser kmsg =
     Right m -> kmsg == m
   where types = kmsg :: Message
 
-runMessageChecks = quickCheck checkMessageParser
-runChecks = quickCheck checkExpressionParser
+runChecks = sequence_ 
+    [ quickCheck checkMessageParser
+    , quickCheck checkExpressionParser
+    , quickCheck checkStatementParser
+    ]
 
 instance Arbitrary Literal where
     arbitrary = liftM StringLiteral 
       $ sized (\n -> replicateM n $ choose ('\0','\255')) 
+
+instance Arbitrary Statement where
+    arbitrary = liftM Expression arbitrary
+    --arbitrary = liftM Expression $ frequency 
+    --  [ (3, arbitrary::Gen Expression) ]
+
          
 instance Arbitrary Expression where
     arbitrary = liftM2 BasicExpression arbitrary arbitrary

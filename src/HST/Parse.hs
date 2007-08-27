@@ -67,9 +67,13 @@ keywordPrimary = do
 unaryMessage = lexeme identifierString >>= return . UnaryMessage  
 
 expression = basicExpression
-statements = statements' []
-statements' s = (returnStatement >>= \ret -> return (s ++ [ret]))
-             <|> (expression >>= \expr -> return (s ++ [Expression expr]))
+
+statements :: GenParser Char st Statements
+statements = sepEndBy expression (lexeme $ char '.') >>= \exprs ->
+     return $ map Expression exprs
+--statements = statements' []
+--statements' s = (returnStatement >>= \ret -> return (s ++ [ret]))
+--             <|> (expression >>= \expr -> return (s ++ [Expression expr]))
 
 returnStatement = char '^' >> expression >>= (return . Return)
 
